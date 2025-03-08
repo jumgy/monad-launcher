@@ -95,6 +95,10 @@ class StarLabsLauncher:
                 print(f"Загрузка настроек из {self.settings_path}")
                 with open(self.settings_path, "r", encoding="utf-8") as file:
                     settings = json.load(file)
+                    
+                # Загрузка настроек для начальных модулей
+                if "initial" in settings:
+                    self.initial_modules = settings["initial"].get("modules", self.initial_modules)
                 
                 # Загрузка настроек для SWAPS
                 if "swaps" in settings:
@@ -148,6 +152,9 @@ class StarLabsLauncher:
         """Сохранение настроек в файл"""
         try:
             settings = {
+                "initial": {  # Добавляем секцию для начальных модулей
+                    "modules": self.initial_modules
+                },
                 "swaps": {
                     "min": self.swaps_count_min,
                     "max": self.swaps_count_max,
@@ -253,12 +260,17 @@ class StarLabsLauncher:
         """Загрузка доступных модулей"""
         # Захардкоженные модули по категориям
         modules = {
+            "INITIAL": [  # Новая категория для начальных тасков
+                "faucet",     # получение токенов с крана
+                "memebridge", # бридж через memebridge
+                "dusted"      # добавляем новый модуль
+            ],
             "SWAPS": [
                 "collect_all_to_monad",  # swap all tokens to native token (MON)
                 "swaps",                 # testnet.monad.xyz/ page token swaps
                 "bean",                  # swap tokens on Bean DEX
-                "ambient",               # swap tokens on Ambient DEX
-                "izumi"                  # swap tokens on Izumi DEX
+                "ambient",              # swap tokens on Ambient DEX
+                "izumi"                 # swap tokens on Izumi DEX
             ],
             "STAKES": [
                 "apriori",               # stake MON token
@@ -451,6 +463,11 @@ class StarLabsLauncher:
     
     def init_default_settings(self):
         """Инициализация настроек рандомизации с дефолтными значениями"""
+        self.initial_modules = {
+            "faucet": True,      # По умолчанию включен
+            "memebridge": False,  # По умолчанию выключен
+            "dusted": False      # Добавляем новый модуль, по умолчанию выключен
+        }
         # Настройки для SWAPS
         self.swaps_count_min = 1
         self.swaps_count_max = 3
@@ -512,7 +529,36 @@ class StarLabsLauncher:
         # Создаем прокручиваемый фрейм
         scroll_frame = ctk.CTkScrollableFrame(settings_window, fg_color=COLORS["bg"])
         scroll_frame.pack(fill="both", expand=True, padx=20, pady=20)
+
+        # НОВАЯ СЕКЦИЯ: Начальные модули
+        initial_frame = ctk.CTkFrame(scroll_frame, fg_color=COLORS["frame_bg"])
+        initial_frame.pack(fill="x", padx=10, pady=10)
         
+        initial_label = ctk.CTkLabel(
+            initial_frame,
+            text="Начальные модули:",
+            font=("Helvetica", 14, "bold"),
+            text_color=COLORS["text"]
+        )
+        initial_label.pack(anchor="w", padx=10, pady=5)
+        
+        # Чекбоксы для начальных модулей
+        self.initial_vars = {}
+        for module in self.modules["INITIAL"]:
+            var = ctk.BooleanVar(value=self.initial_modules.get(module, False))
+            checkbox = ctk.CTkCheckBox(
+                initial_frame,
+                text=module,
+                variable=var,
+                font=("Helvetica", 12),
+                text_color=COLORS["text"],
+                fg_color=COLORS["accent"],
+                hover_color=COLORS["hover"],
+                border_color=COLORS["accent"]
+            )
+            checkbox.pack(anchor="w", padx=30, pady=2)
+            self.initial_vars[module] = var
+
         # Настройки для SWAPS
         if "SWAPS" in self.modules:
             swaps_frame = ctk.CTkFrame(scroll_frame, fg_color=COLORS["frame_bg"])
@@ -979,6 +1025,9 @@ class StarLabsLauncher:
     
     def save_random_settings(self, window):
         """Сохранение настроек рандомизации"""
+        # Сохраняем настройки начальных модулей
+        if hasattr(self, "initial_vars"):
+            self.initial_modules = {module: var.get() for module, var in self.initial_vars.items()}
         # Сохраняем настройки SWAPS
         if hasattr(self, "swaps_min_var") and hasattr(self, "swaps_max_var"):
             self.swaps_count_min = self.swaps_min_var.get()
@@ -1117,6 +1166,13 @@ class StarLabsLauncher:
     def generate_random_tasks(self):
         """Генерация рандомных задач на основе настроек"""
         tasks = []
+        other_tasks = []
+        
+        # Добавляем начальные модули, если они включены
+        if "INITIAL" in self.modules:
+            for module in self.modules["INITIAL"]:
+                if self.initial_modules.get(module, False):
+                    tasks.append(module)
         
         # Выбираем рандомные модули из SWAPS
         if "SWAPS" in self.modules:
@@ -1128,7 +1184,7 @@ class StarLabsLauncher:
                     selected_swaps = random.sample(swaps_modules, count)
                     # Добавляем каждый модуль отдельно
                     for module in selected_swaps:
-                        tasks.append(module)
+                        other_tasks.append(module)
         
         # Выбираем рандомные модули из STAKES
         if "STAKES" in self.modules:
@@ -1140,7 +1196,7 @@ class StarLabsLauncher:
                     selected_stakes = random.sample(stakes_modules, count)
                     # Добавляем каждый модуль отдельно
                     for module in selected_stakes:
-                        tasks.append(module)
+                        other_tasks.append(module)
         
         # Выбираем рандомные модули из MINT
         if "MINT" in self.modules:
@@ -1152,17 +1208,20 @@ class StarLabsLauncher:
                     selected_mint = random.sample(mint_modules, count)
                     # Добавляем каждый модуль отдельно
                     for module in selected_mint:
-                        tasks.append(module)
+                        other_tasks.append(module)
         
         # Добавляем OTHER модули с заданной вероятностью
         if "OTHER" in self.modules:
             other_modules = [module for module, enabled in self.other_modules.items() if enabled]
             if other_modules and random.random() * 100 < self.other_probability:
                 selected_other = random.choice(other_modules)
-                tasks.append(selected_other)
+                other_tasks.append(selected_other)
         
-        # Перемешиваем задачи
-        random.shuffle(tasks)
+        # Перемешиваем только остальные задачи
+        random.shuffle(other_tasks)
+        
+        # Добавляем остальные задачи после начальных
+        tasks.extend(other_tasks)
         
         # Добавляем collect_all_to_monad с заданной вероятностью
         if "SWAPS" in self.modules and "collect_all_to_monad" in self.modules["SWAPS"] and random.random() * 100 < self.collect_probability:
@@ -1171,6 +1230,9 @@ class StarLabsLauncher:
         # Всегда добавляем logs в конец
         if "OTHER" in self.modules and "logs" in self.modules["OTHER"]:
             tasks.append("logs")
+        
+        # Выводим сгенерированные задачи в лог
+        self.update_info(f"Сгенерированы задачи:\n{tasks}")
         
         return tasks
     
@@ -1310,6 +1372,7 @@ sys.path.insert(0, project_dir)
             # Добавляем настройки модулей и рандомизации
             script_content += f"""
 # Захардкоженные модули по категориям
+INITIAL_MODULES = {self.initial_modules} 
 SWAPS_MODULES = {enabled_swaps_modules}
 STAKES_MODULES = {enabled_stakes_modules}
 MINT_MODULES = {enabled_mint_modules}
@@ -1337,11 +1400,16 @@ account_tasks = {}
 # Функция для генерации рандомных задач
 def generate_random_tasks():
     tasks = []
+    other_tasks = []
     
+    # Добавляем начальные модули, если они включены
+    for module, enabled in INITIAL_MODULES.items():
+        if enabled:
+            tasks.append(module)
+
     # Выбираем рандомные модули из SWAPS
     swaps_modules = [module for module in SWAPS_MODULES.keys() if SWAPS_MODULES[module] and module != "collect_all_to_monad"]
     if swaps_modules:
-        # Ограничиваем максимальное количество модулей количеством доступных
         max_swaps = min(SWAPS_MAX, len(swaps_modules))
         min_swaps = min(SWAPS_MIN, max_swaps)
         
@@ -1349,14 +1417,12 @@ def generate_random_tasks():
             count = random.randint(min_swaps, max_swaps)
             if count > 0:
                 selected_swaps = random.sample(swaps_modules, count)
-                # Добавляем каждый модуль отдельно
                 for module in selected_swaps:
-                    tasks.append(module)
+                    other_tasks.append(module)
     
     # Выбираем рандомные модули из STAKES
     stakes_modules = [module for module in STAKES_MODULES.keys() if STAKES_MODULES[module]]
     if stakes_modules:
-        # Ограничиваем максимальное количество модулей количеством доступных
         max_stakes = min(STAKES_MAX, len(stakes_modules))
         min_stakes = min(STAKES_MIN, max_stakes)
         
@@ -1364,14 +1430,12 @@ def generate_random_tasks():
             count = random.randint(min_stakes, max_stakes)
             if count > 0:
                 selected_stakes = random.sample(stakes_modules, count)
-                # Добавляем каждый модуль отдельно
                 for module in selected_stakes:
-                    tasks.append(module)
+                    other_tasks.append(module)  # Изменено с tasks на other_tasks
     
     # Выбираем рандомные модули из MINT
     mint_modules = [module for module in MINT_MODULES.keys() if MINT_MODULES[module]]
     if mint_modules:
-        # Ограничиваем максимальное количество модулей количеством доступных
         max_mint = min(MINT_MAX, len(mint_modules))
         min_mint = min(MINT_MIN, max_mint)
         
@@ -1379,18 +1443,20 @@ def generate_random_tasks():
             count = random.randint(min_mint, max_mint)
             if count > 0:
                 selected_mint = random.sample(mint_modules, count)
-                # Добавляем каждый модуль отдельно
                 for module in selected_mint:
-                    tasks.append(module)
+                    other_tasks.append(module)  # Изменено с tasks на other_tasks
     
     # Добавляем OTHER модули с заданной вероятностью
     other_modules = [module for module in OTHER_MODULES.keys() if OTHER_MODULES[module]]
     if other_modules and random.random() * 100 < OTHER_PROBABILITY:
         selected_other = random.choice(other_modules)
-        tasks.append(selected_other)
+        other_tasks.append(selected_other)  # Изменено с tasks на other_tasks
     
-    # Перемешиваем задачи
-    random.shuffle(tasks)
+    # Перемешиваем только остальные задачи
+    random.shuffle(other_tasks)  # Перемешиваем other_tasks вместо tasks
+    
+    # Добавляем остальные задачи после начальных
+    tasks.extend(other_tasks)
     
     # Добавляем collect_all_to_monad с заданной вероятностью
     if random.random() * 100 < COLLECT_PROBABILITY:
