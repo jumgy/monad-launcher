@@ -279,6 +279,7 @@ class StarLabsLauncher:
                 "kintsu"                 # stake MON token on kintsu.xyz/
             ],
             "MINT": [
+                "monadverse",
                 "magiceden",             # mint NFT on magiceden.io
                 "accountable",           # mint accountable nft
                 "owlto",                 # deploy contract on Owlto
@@ -1922,7 +1923,8 @@ def patch_process_module():
         original_account_flow = process.account_flow
         
         # Создаем патч для метода account_flow
-        async def patched_account_flow(account_index, proxy, private_key, discord_token, email, config, lock):
+        # В schedule_runner.py
+        async def patched_account_flow(account_index, proxy, private_key, discord_token, twitter_token, email, config, lock, progress_tracker):
             global first_account_launched, launched_accounts
             
             # Если это первый запускаемый аккаунт (независимо от его индекса)
@@ -1951,8 +1953,8 @@ def patch_process_module():
                 
                 launched_accounts.add(account_index)
             
-            # Вызываем оригинальный метод
-            return await original_account_flow(account_index, proxy, private_key, discord_token, email, config, lock)
+            # Вызываем оригинальный метод со всеми параметрами
+            return await original_account_flow(account_index, proxy, private_key, discord_token, twitter_token, email, config, lock, progress_tracker)
         
         # Заменяем методы на наши патчи
         process.account_flow = patched_account_flow
