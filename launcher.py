@@ -117,6 +117,9 @@ class StarLabsLauncher:
                     self.mint_count_min = settings["mint"].get("min", self.mint_count_min)
                     self.mint_count_max = settings["mint"].get("max", self.mint_count_max)
                     self.mint_modules = settings["mint"].get("modules", self.mint_modules)
+                    
+                if "games" in settings:
+                    self.games_modules = settings["games"].get("modules", self.games_modules)
                 
                 # Загрузка настроек для OTHER
                 if "other" in settings:
@@ -173,6 +176,10 @@ class StarLabsLauncher:
                 "other": {
                     "probability": self.other_probability,
                     "modules": self.other_modules
+                },
+                
+                "games": {
+                    "modules": self.games_modules
                 },
                 "collect": {
                     "probability": self.collect_probability
@@ -258,43 +265,44 @@ class StarLabsLauncher:
         
     def load_available_modules(self):
         """Загрузка доступных модулей"""
-        # Захардкоженные модули по категориям
         modules = {
-            "INITIAL": [  # Новая категория для начальных тасков
-                "faucet",     # получение токенов с крана
-                "memebridge", # бридж через memebridge
-                "dusted"      # добавляем новый модуль
+            "INITIAL": [
+                "faucet",     
+                "memebridge",
+                "dusted"      
             ],
             "SWAPS": [
-                "collect_all_to_monad",  # swap all tokens to native token (MON)
-                "swaps",                 # testnet.monad.xyz/ page token swaps
-                "bean",                  # swap tokens on Bean DEX
-                "ambient",              # swap tokens on Ambient DEX
-                "izumi"                 # swap tokens on Izumi DEX
+                "collect_all_to_monad",
+                "swaps",
+                "bean",
+                "ambient",
+                "izumi"
             ],
             "STAKES": [
-                "apriori",               # stake MON token
-                "magma",                 # stake MON token on Magma
-                "shmonad",               # buy and stake shmon on shmonad.xyz
-                "kintsu"                 # stake MON token on kintsu.xyz/
+                "apriori",
+                "magma",
+                "shmonad",
+                "kintsu"
             ],
             "MINT": [
                 "monadverse",
-                "magiceden",             # mint NFT on magiceden.io
-                "accountable",           # mint accountable nft
-                "owlto",                 # deploy contract on Owlto
-                "lilchogstars",          # mint NFT on testnet.lilchogstars.com/
-                "demask",                # mint NFT on app.demask.finance/launchpad/0x2cdd146aa75ffa605ff7c5cc5f62d3b52c140f9c/0
-                "monadking",             # mint NFT on nerzo.xyz/monadking
-                "monadking_unlocked"     # mint NFT on www.nerzo.xyz/unlocked
+                "magiceden",
+                "accountable",
+                "owlto",
+                "lilchogstars",
+                "demask",
+                "monadking",
+                "monadking_unlocked"
+            ],
+            "GAMES": [ 
+                "frontrunner"  
             ],
             "OTHER": [
-                "logs",                  # show logs: MON balance | number of transactions | avarage balance | avarage number of transactions
-                "nad_domains",           # register random domain on nad.domains
-                "aircraft"               # mint NFT on aircraft.fun
+                "logs",
+                "nad_domains",
+                "aircraft"
             ]
         }
-        
         return modules
         
     def create_widgets(self):
@@ -489,6 +497,8 @@ class StarLabsLauncher:
         self.mint_count_min = 2
         self.mint_count_max = 4
         self.mint_modules = {module: True for module in self.modules.get("MINT", [])}
+        
+        self.games_modules = {module: True for module in self.modules.get("GAMES", [])}
         
         # Настройки для OTHER
         self.other_probability = 30
@@ -872,6 +882,35 @@ class StarLabsLauncher:
                 )
                 checkbox.pack(anchor="w", padx=30, pady=2)
                 self.mint_vars[module] = var
+                
+        if "GAMES" in self.modules:
+            games_frame = ctk.CTkFrame(scroll_frame, fg_color=COLORS["frame_bg"])
+            games_frame.pack(fill="x", padx=10, pady=10)
+            
+            games_label = ctk.CTkLabel(
+                games_frame,
+                text="Игровые модули:",
+                font=("Helvetica", 14, "bold"),
+                text_color=COLORS["text"]
+            )
+            games_label.pack(anchor="w", padx=10, pady=5)
+            
+            # Чекбоксы для модулей
+            self.games_vars = {}
+            for module in self.modules["GAMES"]:
+                var = ctk.BooleanVar(value=self.games_modules.get(module, True))
+                checkbox = ctk.CTkCheckBox(
+                    games_frame,
+                    text=module,
+                    variable=var,
+                    font=("Helvetica", 12),
+                    text_color=COLORS["text"],
+                    fg_color=COLORS["accent"],
+                    hover_color=COLORS["hover"],
+                    border_color=COLORS["accent"]
+                )
+                checkbox.pack(anchor="w", padx=30, pady=2)
+                self.games_vars[module] = var
         
         # Настройка для OTHER с вероятностью
         if "OTHER" in self.modules:
@@ -1065,6 +1104,9 @@ class StarLabsLauncher:
         if hasattr(self, "mint_vars"):
             self.mint_modules = {module: var.get() for module, var in self.mint_vars.items()}
         
+        if hasattr(self, "games_vars"):
+            self.games_modules = {module: var.get() for module, var in self.games_vars.items()}
+        
         # Сохраняем настройки OTHER
         if hasattr(self, "other_prob_var"):
             self.other_probability = self.other_prob_var.get()
@@ -1210,6 +1252,11 @@ class StarLabsLauncher:
                     # Добавляем каждый модуль отдельно
                     for module in selected_mint:
                         other_tasks.append(module)
+                        
+        if "GAMES" in self.modules:
+            games_modules = [module for module, enabled in self.games_modules.items() if enabled]
+            for module in games_modules:
+                other_tasks.append(module)
         
         # Добавляем OTHER модули с заданной вероятностью
         if "OTHER" in self.modules:
@@ -1305,7 +1352,6 @@ class StarLabsLauncher:
             return False
     
     def create_random_tasks_script(self):
-        """Создание скрипта для генерации рандомных задач для каждого аккаунта"""
         try:
             # Путь к временному скрипту
             script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "random_tasks_for_accounts.py")
@@ -1323,6 +1369,11 @@ class StarLabsLauncher:
             enabled_mint_modules = {}
             for module in self.modules.get("MINT", []):
                 enabled_mint_modules[module] = self.mint_modules.get(module, True)
+            
+            # Добавляем игровые модули
+            enabled_games_modules = {}
+            for module in self.modules.get("GAMES", []):
+                enabled_games_modules[module] = self.games_modules.get(module, True)
                     
             enabled_other_modules = {}
             for module in self.modules.get("OTHER", []):
@@ -1377,6 +1428,7 @@ INITIAL_MODULES = {self.initial_modules}
 SWAPS_MODULES = {enabled_swaps_modules}
 STAKES_MODULES = {enabled_stakes_modules}
 MINT_MODULES = {enabled_mint_modules}
+GAMES_MODULES = {enabled_games_modules}
 OTHER_MODULES = {enabled_other_modules}
 
 # Настройки рандомизации
@@ -1398,6 +1450,7 @@ logger.info("Настройки рандомизации загружены")
 account_index = 0
 account_tasks = {}
 
+# Функция для генерации рандомных задач
 # Функция для генерации рандомных задач
 def generate_random_tasks():
     tasks = []
@@ -1432,7 +1485,7 @@ def generate_random_tasks():
             if count > 0:
                 selected_stakes = random.sample(stakes_modules, count)
                 for module in selected_stakes:
-                    other_tasks.append(module)  # Изменено с tasks на other_tasks
+                    other_tasks.append(module)
     
     # Выбираем рандомные модули из MINT
     mint_modules = [module for module in MINT_MODULES.keys() if MINT_MODULES[module]]
@@ -1445,16 +1498,21 @@ def generate_random_tasks():
             if count > 0:
                 selected_mint = random.sample(mint_modules, count)
                 for module in selected_mint:
-                    other_tasks.append(module)  # Изменено с tasks на other_tasks
+                    other_tasks.append(module)
+    
+    # Добавляем GAMES модули, если они включены
+    games_modules = [module for module in GAMES_MODULES.keys() if GAMES_MODULES[module]]
+    for module in games_modules:
+        other_tasks.append(module)
     
     # Добавляем OTHER модули с заданной вероятностью
     other_modules = [module for module in OTHER_MODULES.keys() if OTHER_MODULES[module]]
     if other_modules and random.random() * 100 < OTHER_PROBABILITY:
         selected_other = random.choice(other_modules)
-        other_tasks.append(selected_other)  # Изменено с tasks на other_tasks
+        other_tasks.append(selected_other)
     
     # Перемешиваем только остальные задачи
-    random.shuffle(other_tasks)  # Перемешиваем other_tasks вместо tasks
+    random.shuffle(other_tasks)
     
     # Добавляем остальные задачи после начальных
     tasks.extend(other_tasks)
