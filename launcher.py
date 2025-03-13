@@ -282,7 +282,8 @@ class StarLabsLauncher:
                 "apriori",
                 "magma",
                 "shmonad",
-                "kintsu"
+                "kintsu",
+                "nostra"
             ],
             "MINT": [
                 "monadverse",
