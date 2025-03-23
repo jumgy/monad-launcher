@@ -267,7 +267,8 @@ class StarLabsLauncher:
         """Загрузка доступных модулей"""
         modules = {
             "INITIAL": [
-                "faucet",     
+                "faucet",
+                "crusty_refuel",     
                 "memebridge",
                 "dusted"      
             ],
@@ -283,17 +284,19 @@ class StarLabsLauncher:
                 "magma",
                 "shmonad",
                 "kintsu",
-                "nostra"
+                "nostra",
+                "multiplifi",
+                "flapsh"
             ],
             "MINT": [
-                "monadverse",
                 "magiceden",
-                "accountable",
                 "owlto",
                 "lilchogstars",
-                "demask",
                 "monadking",
-                "monadking_unlocked"
+                "monadking_unlocked",
+                "easynode_deploy",
+                "onchaingm_deploy",
+                "monai_legacy"
             ],
             "GAMES": [ 
                 "frontrunner"  
@@ -301,7 +304,9 @@ class StarLabsLauncher:
             "OTHER": [
                 "logs",
                 "nad_domains",
-                "aircraft"
+                "aircraft",
+                "narwhal_finance",
+                "monsternad_whitelist"
             ]
         }
         return modules
@@ -474,7 +479,8 @@ class StarLabsLauncher:
     def init_default_settings(self):
         """Инициализация настроек рандомизации с дефолтными значениями"""
         self.initial_modules = {
-            "faucet": True,      # По умолчанию включен
+            "faucet": True,
+            "crusty_refuel" : False,       # По умолчанию выключен
             "memebridge": False,  # По умолчанию выключен
             "dusted": False      # Добавляем новый модуль, по умолчанию выключен
         }
