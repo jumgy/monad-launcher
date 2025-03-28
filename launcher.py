@@ -269,8 +269,7 @@ class StarLabsLauncher:
             "INITIAL": [
                 "faucet",
                 "crusty_refuel",     
-                "memebridge",
-                "dusted"      
+                "memebridge",      
             ],
             "SWAPS": [
                 "collect_all_to_monad",
@@ -296,7 +295,10 @@ class StarLabsLauncher:
                 "monadking_unlocked",
                 "easynode_deploy",
                 "onchaingm_deploy",
-                "monai_legacy"
+                "morkie_monhog",
+                "morkie_monarch",
+                "monaigg",
+                "nerzo_soulbound"
             ],
             "GAMES": [ 
                 "frontrunner"  
