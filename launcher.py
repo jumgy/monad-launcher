@@ -277,7 +277,8 @@ class StarLabsLauncher:
                 "swaps",
                 "bean",
                 "ambient",
-                "izumi"
+                "izumi",
+                "madness_swaps"
             ],
             "STAKES": [
                 "apriori",
