@@ -268,6 +268,7 @@ class StarLabsLauncher:
         modules = {
             "INITIAL": [
                 "faucet",
+                "dusted",
                 "crusty_refuel",     
                 "memebridge",      
             ],
