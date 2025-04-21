@@ -301,6 +301,8 @@ class StarLabsLauncher:
                 "morkie_monarch",
                 "monaigg",
                 "nerzo_soulbound"
+                "nerzo_monad",
+                "zkcodex"
             ],
             "GAMES": [ 
                 "frontrunner"  
@@ -308,7 +310,6 @@ class StarLabsLauncher:
             "OTHER": [
                 "logs",
                 "nad_domains",
-                "aircraft",
                 "narwhal_finance",
                 "monsternad_whitelist"
             ]
